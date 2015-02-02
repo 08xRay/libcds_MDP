@@ -9,6 +9,8 @@
 #ifndef __Lock_Free_Ordered_Linked_List__NodeTypes__
 #define __Lock_Free_Ordered_Linked_List__NodeTypes__
 
+#include <atomic>
+
 template <typename T>
 struct CellNode;
 
