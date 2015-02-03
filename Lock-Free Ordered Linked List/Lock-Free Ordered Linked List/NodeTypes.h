@@ -21,9 +21,11 @@ struct Node;
 template <typename T>
 struct Node {
     std::atomic<Node<T>*>   next;
+    std::atomic_ulong       refct_claim;
     
     Node() :
-    next(nullptr) {}
+    next(nullptr),
+    refct_claim(0) {}
     
     Node (const Node&) = delete;             // copy constructor
     Node (Node&&) = delete;                  // move constructor
@@ -34,14 +36,12 @@ struct Node {
 
 template <typename T>
 struct CellNode : public Node<T> {
-    T                       data;
-    std::atomic<Node<T>*>   back_link;
-    std::atomic_ulong       refct_claim;
+    T                           data;
+    std::atomic<CellNode<T>*>   back_link;
     
     CellNode() :
     data(T()),
-    back_link(nullptr),
-    refct_claim(0) {}
+    back_link(nullptr) {}
     
     CellNode (const CellNode&) = delete;             // copy constructor
     CellNode (CellNode&&) = delete;                  // move constructor
