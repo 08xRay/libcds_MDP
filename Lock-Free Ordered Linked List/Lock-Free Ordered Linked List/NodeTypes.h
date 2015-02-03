@@ -29,7 +29,7 @@ struct Node {
     Node (Node&&) = delete;                  // move constructor
     Node& operator= (const Node&) = delete;  // copy assignment operator
     
-    virtual ~Node() = default;
+    virtual ~Node() = default;               // polymorphic declaration
 };
 
 template <typename T>

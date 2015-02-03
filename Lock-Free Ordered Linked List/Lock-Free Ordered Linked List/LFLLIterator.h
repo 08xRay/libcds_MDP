@@ -20,7 +20,7 @@ public:
     inline bool operator==(const LFLLIterator<T>& it) const;
     inline bool operator!=(const LFLLIterator<T>& it) const;
     
-    std::atomic<AuxNode<T>*>    pre_aux;
+    std::atomic<Node<T>*>       pre_aux;
     std::atomic<CellNode<T>*>   target;
     std::atomic<CellNode<T>*>   pre_cell;
 };
