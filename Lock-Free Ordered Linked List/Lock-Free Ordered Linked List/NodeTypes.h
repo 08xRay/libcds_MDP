@@ -15,29 +15,37 @@ template <typename T>
 struct CellNode;
 
 template <typename T>
-struct AuxNode;
+struct Node;
 
 
 template <typename T>
-struct AuxNode {
-    std::atomic<CellNode<T>*>   next;
+struct Node {
+    std::atomic<Node<T>*>   next;
     
-    AuxNode() :
+    Node() :
     next(nullptr) {}
+    
+    Node (const Node&) = delete;             // copy constructor
+    Node (Node&&) = delete;                  // move constructor
+    Node& operator= (const Node&) = delete;  // copy assignment operator
+    
+    virtual ~Node() = default;
 };
 
 template <typename T>
-struct CellNode {
-    T                           data;
-    std::atomic<AuxNode<T>*>    next;
-    std::atomic<CellNode<T>*>   back_link;
-    std::atomic_ulong           refct_claim;
+struct CellNode : public Node<T> {
+    T                       data;
+    std::atomic<Node<T>*>   back_link;
+    std::atomic_ulong       refct_claim;
     
     CellNode() :
     data(T()),
-    next(nullptr),
     back_link(nullptr),
     refct_claim(0) {}
+    
+    CellNode (const CellNode&) = delete;             // copy constructor
+    CellNode (CellNode&&) = delete;                  // move constructor
+    CellNode& operator= (const CellNode&) = delete;  // copy assignment operator
 };
 
 #endif /* defined(__Lock_Free_Ordered_Linked_List__NodeTypes__) */
