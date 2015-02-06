@@ -39,8 +39,8 @@ struct CellNode : public Node<T> {
     T                           data;
     std::atomic<CellNode<T>*>   back_link;
     
-    CellNode() :
-    data(T()),
+    CellNode(T data = T()) :
+    data(data),
     back_link(nullptr) {}
     
     CellNode (const CellNode&) = delete;             // copy constructor
