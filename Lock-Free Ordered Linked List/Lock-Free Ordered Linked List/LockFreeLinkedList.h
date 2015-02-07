@@ -28,11 +28,12 @@ private:
     void            _delete(T key);                          // done check T data pointer
     Node<T>*        _safeRead(std::atomic<Node<T>*>* p);     // done TR599
     void            _release(Node<T>* p);                    // done TR599
-    bool            _decrementAndTestAndSet(std::atomic_ulong* p);
-    void            _reclaim(Node<T>* p);
+    bool            _decrementAndTestAndSet(std::atomic_ulong* p); // TR599 +
+    void            _clearLowestBit(std::atomic_ulong* p);   // TR599 +
+    void            _reclaim(Node<T>* p);                    // needs freelist
+
     std::atomic<CellNode<T>*> FIRST_NODE;
     std::atomic<CellNode<T>*> LAST_NODE;
-
 };
 
 template <typename T>
@@ -193,6 +194,37 @@ void LockFreeLinkedList<T>::_release(Node<T> *p) {
         _release(p->next.load());
     }
     _reclaim(p);
+}
+
+template <typename T>
+bool LockFreeLinkedList<T>::_decrementAndTestAndSet(std::atomic_ulong* p) {
+    unsigned long oldVal, newVal;
+    do {
+        oldVal = p->load();
+        newVal = oldVal - 2;
+        if (newVal == 0) {
+            newVal = 1;
+        }
+    } while (!p->compare_exchange_weak(oldVal, newVal));
+    return (oldVal - newVal) & 1;
+}
+
+template <typename T>
+void LockFreeLinkedList<T>::_clearLowestBit(std::atomic_ulong* p) {
+    unsigned long oldVal, newVal;
+    do {
+        oldVal = p->load();
+        newVal = oldVal - 1;
+    } while (!p->compare_exchange_weak(oldVal, newVal));
+}
+
+
+template <typename T>
+void LockFreeLinkedList<T>::_reclaim(Node<T>* p) {
+   // do {
+     //   Node<T>* q = freelist;
+     //   p->next.store(q);
+  //  } while (!freelist.compare_exchange_weak(q, p));
 }
 
 #endif /* defined(__Lock_Free_Ordered_Linked_List__LockFreeLinkedList__) */
