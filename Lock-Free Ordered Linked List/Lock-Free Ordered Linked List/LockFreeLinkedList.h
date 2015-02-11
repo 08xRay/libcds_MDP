@@ -16,7 +16,31 @@
 template <typename T>
 class LockFreeLinkedList {
 public:
-    
+    LockFreeLinkedList(unsigned int capacity = 100) :
+    list_capacity(capacity),
+    FIRST_NODE(new CellNode<T>()),
+    LAST_NODE(new CellNode<T>()) {
+        // init list state
+        Node<T>* aux = new Node<T>();
+        aux->next.store(LAST_NODE.load());
+        FIRST_NODE.load()->next.store(aux);
+        // init freelists
+        if (list_capacity > 0) {
+            freeCellsList.store(new CellNode<T>());
+            freeAuxNodesList.store(new Node<T>());
+            Node<T>* auxCurrNode = freeAuxNodesList.load();
+            Node<T>* cellCurrNode = freeCellsList.load();
+            for (unsigned int i = 1; i < list_capacity; i++) {
+                Node<T>* newAuxNode = new CellNode<T>();
+                Node<T>* newCellNode = new CellNode<T>();
+                auxCurrNode->next.store(newAuxNode);
+                cellCurrNode->next.store(newCellNode);
+                auxCurrNode = newAuxNode;
+                cellCurrNode = newCellNode;
+            }
+        }
+    }
+               
 private:
     void            _update(LFLLIterator<T>* it);            // done
     void            _first(LFLLIterator<T>* it);             // done check dynamic_cast
@@ -30,10 +54,16 @@ private:
     void            _release(Node<T>* p);                    // done TR599
     bool            _decrementAndTestAndSet(std::atomic_ulong* p); // TR599 +
     void            _clearLowestBit(std::atomic_ulong* p);   // TR599 +
-    void            _reclaim(Node<T>* p);                    // needs freelist
+    void            _reclaim(Node<T>* p);                    // done
+    Node<T>*        _allocAuxNode();                         // done
+    CellNode<T>*    _allocCellNode();                        // done
 
-    std::atomic<CellNode<T>*> FIRST_NODE;
-    std::atomic<CellNode<T>*> LAST_NODE;
+    
+    unsigned int                    list_capacity;
+    const std::atomic<CellNode<T>*> FIRST_NODE;
+    const std::atomic<CellNode<T>*> LAST_NODE;
+    std::atomic<CellNode<T>*>       freeCellsList;
+    std::atomic<Node<T>*>           freeAuxNodesList;
 };
 
 template <typename T>
@@ -221,10 +251,52 @@ void LockFreeLinkedList<T>::_clearLowestBit(std::atomic_ulong* p) {
 
 template <typename T>
 void LockFreeLinkedList<T>::_reclaim(Node<T>* p) {
-   // do {
-     //   Node<T>* q = freelist;
-     //   p->next.store(q);
-  //  } while (!freelist.compare_exchange_weak(q, p));
+    Node<T>* q = nullptr;
+    bool isCellNode = (dynamic_cast<CellNode<T>*>(p) != nullptr);
+    if (isCellNode) {
+        do {
+            Node<T>* q = freeCellsList.load();
+            p->next.store(q);
+        } while (!freeCellsList.compare_exchange_weak(q, p));
+
+    } else {
+        do {
+            Node<T>* q = freeAuxNodesList.load();
+            p->next.store(q);
+        } while (!freeAuxNodesList.compare_exchange_weak(q, p));
+    }
+}
+
+template <typename T>
+Node<T>* LockFreeLinkedList<T>::_allocAuxNode() {
+    while (1) {
+        Node<T>* p = _safeRead(&freeAuxNodesList);
+        if (p == nullptr) {
+            throw std::bad_alloc();
+        }
+        if (freeAuxNodesList.compare_exchange_weak(p, p->next.load())) {
+            _clearLowestBit(&p->refct_claim);
+            return p;
+        } else {
+            _release(p);
+        }
+    }
+}
+
+template <typename T>
+CellNode<T>* LockFreeLinkedList<T>::_allocCellNode() {
+    while (1) {
+        CellNode<T>* p = dynamic_cast<CellNode<T>*>(_safeRead(&freeCellsList));
+        if (p == nullptr) {
+            throw std::bad_alloc();
+        }
+        if (freeCellsList.compare_exchange_weak(p, p->next.load())) {
+            _clearLowestBit(&p->refct_claim);
+            return p;
+        } else {
+            _release(p);
+        }
+    }
 }
 
 #endif /* defined(__Lock_Free_Ordered_Linked_List__LockFreeLinkedList__) */
