@@ -48,7 +48,7 @@ private:
     bool            _tryInsert(LFLLIterator<T>* it, CellNode<T>& q, Node<T>& a); // check & or *
     bool            _tryDelete(LFLLIterator<T>* it);         // done
     bool            _findFrom(T key, LFLLIterator<T>* it);   // done check T data pointer
-    void            _insert(T key);                          // done check T data pointer and NEW
+    void            _insert(T key);                          // done check T data pointer
     void            _delete(T key);                          // done check T data pointer
     Node<T>*        _safeRead(std::atomic<Node<T>*>* p);     // done TR599
     void            _release(Node<T>* p);                    // done TR599
@@ -168,8 +168,9 @@ template <typename T>
 void LockFreeLinkedList<T>::_insert(T key) {
     LFLLIterator<T>* it = new LFLLIterator<T>();
     _first(it);
-    CellNode<T>*     q = new CellNode<T>(key);      // init data if new not default
-    Node<T>*         a = new Node<T>();
+    CellNode<T>*     q = _allocCellNode();      // init data if new not default
+    Node<T>*         a = _allocAuxNode();
+    q->data = key;
     while (1) {
         bool r = _findFrom(key, it);
         if (r) { break; }
