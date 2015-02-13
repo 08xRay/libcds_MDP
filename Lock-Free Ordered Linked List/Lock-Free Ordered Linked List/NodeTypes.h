@@ -37,7 +37,7 @@ struct Node {
 template <typename T>
 struct CellNode : public Node<T> {
     T                           data;
-    std::atomic<CellNode<T>*>   back_link;
+    std::atomic<Node<T>*>       back_link;
     
     CellNode(T data = T()) :
     data(data),

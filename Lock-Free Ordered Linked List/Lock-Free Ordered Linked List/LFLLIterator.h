@@ -21,8 +21,8 @@ public:
     inline bool operator!=(const LFLLIterator<T>& it) const;
     
     std::atomic<Node<T>*>       pre_aux;
-    std::atomic<CellNode<T>*>   target;
-    std::atomic<CellNode<T>*>   pre_cell;
+    std::atomic<Node<T>*>       target;
+    std::atomic<Node<T>*>       pre_cell;
 };
 
 template <typename T>
