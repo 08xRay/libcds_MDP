@@ -23,7 +23,10 @@ public:
     freeCellsList(new CellNode<T>()),
     freeAuxNodesList(new Node<T>()) {
         // init list state
+        FIRST_NODE.load()->refct_claim = 1;
+        LAST_NODE.load()->refct_claim = 1;
         Node<T>* aux = new Node<T>();
+        aux->refct_claim = 1;
         aux->next.store(LAST_NODE.load());
         FIRST_NODE.load()->next.store(aux);
         // init freelists
@@ -68,10 +71,10 @@ public:
 
 template <typename T>
 void LockFreeLinkedList<T>::_update(LFLLIterator<T>* it) {
-    if (it->pre_aux.load()->next.load() == it->target.load()) {
+    Node<T>*        p = it->pre_aux.load();
+    if (p->next.load() == it->target.load()) {
         return;
     }
-    Node<T>*        p = it->pre_aux.load();
     Node<T>*        n = _safeRead(&p->next);
     _release(it->target.load());
     while (n != LAST_NODE.load() && !dynamic_cast<CellNode<T>*>(n)) {
@@ -216,13 +219,6 @@ void LockFreeLinkedList<T>::_release(Node<T> *p) {
     }
     if (!_decrementAndTestAndSet(&p->refct_claim)) {
         return;
-    }
-    CellNode<T>* q = dynamic_cast<CellNode<T>*>(p);
-    if (q != nullptr) {
-        _release(q->next.load());
-        _release(q->back_link.load());
-    } else {
-        _release(p->next.load());
     }
     _reclaim(p);
 }
