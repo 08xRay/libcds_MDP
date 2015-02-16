@@ -21,7 +21,7 @@ struct Node;
 template <typename T>
 struct Node {
     std::atomic<Node<T>*>       next;
-    std::atomic_ulong           refct_claim;
+    std::atomic_long            refct_claim;
     
     Node() :
     next(nullptr),
