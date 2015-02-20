@@ -1,7 +1,7 @@
 //
-//  Simple writer, random reader example. Not handle bad_alloc exception.
+//  Random writer, random reader example. Not handle bad_alloc exception.
 //
-//  1.cpp
+//  2.cpp
 //  Lock-Free Ordered Linked List
 //
 //  Created by Станислав Райцин on 21.02.15.
@@ -18,19 +18,21 @@ LockFreeLinkedList<int>* list;
 void writer_method() {
     int val = 0;
     while (true) {
-        list->_insert(++val);
+        int target = std::rand() % ++val + 1;
+        val = val % 15;
+        list->_insert(target);
         std::this_thread::sleep_for(timeout);
     }
 }
 
 void reader_method() {
-    int val = 1;
+    int val = 0;
     while (true) {
-        int target = std::rand() % val + 1;
+        int target = std::rand() % ++val + 1;
+        val = val % 15;
         if (list->_find(target)) {
             std::cout << "List contains: " << target << std::endl;
             list->_delete(target);
-            ++val;
         } else {
             std::cout << "Value: " << target << " not found in list" << std::endl;
         }

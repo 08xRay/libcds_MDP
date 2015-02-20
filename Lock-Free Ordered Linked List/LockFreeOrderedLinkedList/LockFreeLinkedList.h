@@ -195,9 +195,6 @@ bool LockFreeLinkedList<T>::_findFrom(T key, LFLLIterator<T> *it) {
             if (n->data == key) {
                 return true;
             }
-            if (n->data > key) {
-                return false;
-            }
         }
         _next(it);
     }
