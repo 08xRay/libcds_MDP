@@ -18,14 +18,14 @@ class LockFreeLinkedList {
 public:
     LockFreeLinkedList(unsigned int capacity = 100) :
     list_capacity(capacity),
-    FIRST_NODE(new CellNode<T>()),
-    LAST_NODE(new CellNode<T>()),
+    FIRST_NODE(new CellNode<T>(NULL)),
+    LAST_NODE(new CellNode<T>(NULL)),
     freeCellsList(new CellNode<T>()),
     freeAuxNodesList(new Node<T>()) { initialize(); }
     
     void            _insert(T key);
     void            _delete(T key);
-    T*              _find(T key);
+    bool            _find(T key);
     
 private:
     void            _update(LFLLIterator<T>* it);
@@ -88,15 +88,14 @@ void LockFreeLinkedList<T>::_delete(T key) {
 }
 
 template <typename T>
-T* LockFreeLinkedList<T>::_find(T key) {
+bool LockFreeLinkedList<T>::_find(T key) {
     LFLLIterator<T>* it = new LFLLIterator<T>();
     _first(it);
-    _findFrom(key, it);
+    bool r = _findFrom(key, it);
     _release(it->pre_cell.load());
     _release(it->pre_aux.load());
     _release(it->target.load());
-    CellNode<T>* p = dynamic_cast<CellNode<T>*>(it->target.load());
-    return new T(p->data);
+    return r;
 }
 
 
